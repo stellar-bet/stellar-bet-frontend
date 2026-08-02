@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background-color: #f5f5f5; color: #212121; font-family: 'Inter', system-ui, sans-serif; }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #f5f5f5; }
+  ::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 4px; }
+
+  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
+
+/* ── SportyBet exact component styles ─────────────────────────────────────── */
+
+/* Odds button — blue pill like SportyBet */
+.odds-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 4px 6px;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  outline: none;
+  user-select: none;
+}
+.odds-btn:hover {
+  background: #bbdefb;
+  border-color: #1565c0;
+}
+.odds-btn-selected {
+  background: #00a651 !important;
+  border-color: #00a651 !important;
+}
+.odds-btn-selected .odds-btn-value { color: #fff !important; font-weight: 700; }
+.odds-btn-selected .odds-btn-label { color: rgba(255,255,255,0.8) !important; }
+
+.odds-btn-label {
+  font-size: 0.58rem;
+  color: #757575;
+  line-height: 1;
+  margin-bottom: 1px;
+  white-space: nowrap;
+}
+.odds-btn-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1565c0;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Competition header — SportyBet style */
+.comp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #e8f5ee;
+  border-bottom: 1px solid #c8e6c9;
+  border-left: 3px solid #00a651;
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  text-align: left;
+}
+.comp-header:hover { background: #d7f0e1; }
+
+/* Match row — very compact like SportyBet */
+.match-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #eeeeee;
+  background: #fff;
+  transition: background 0.1s;
+  gap: 6px;
+}
+.match-row:hover { background: #f9fbe7; }
+.match-row:nth-child(even) { background: #fafafa; }
+.match-row:nth-child(even):hover { background: #f9fbe7; }
+
+/* Left sport sidebar */
+.sport-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px;
+  width: 100%;
+  color: #424242;
+  font-size: 0.58rem;
+  text-align: center;
+  border-bottom: 1px solid #eeeeee;
+  transition: all 0.1s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.sport-item:hover { background: #e8f5ee; color: #00a651; }
+.sport-item-active {
+  background: #e8f5ee;
+  color: #00a651;
+  border-left: 3px solid #00a651;
+  font-weight: 600;
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #00a651;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Chip filter tab */
+.chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+  outline: none;
+  background: #fff;
+  color: #424242;
+}
+.chip:hover { border-color: #00a651; color: #00a651; }
+.chip-active {
+  background: #00a651;
+  border-color: #00a651;
+  color: #fff;
+  font-weight: 600;
+}
+.chip-inactive { background: #fff; color: #424242; }
+
+/* Bet slip button */
+.sp-btn-green {
+  background: #00a651;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+}
+.sp-btn-green:hover { background: #007a3d; }
+.sp-btn-green:disabled { background: #a5d6a7; cursor: not-allowed; }
+
+/* Ticker */
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes livePulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+.animate-live-pulse { animation: livePulse 1.2s ease-in-out infinite; }
+
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.animate-fade-in { animation: fadeIn 0.15s ease-out; }
+
+@keyframes slideUp { from { transform:translateY(6px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.animate-slide-up { animation: slideUp 0.2s ease-out; }

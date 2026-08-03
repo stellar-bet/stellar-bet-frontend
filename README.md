@@ -363,6 +363,22 @@ Tests use [Jest](https://jestjs.io) + [React Testing Library](https://testing-li
 
 ---
 
+## Roadmap to Mainnet
+
+StellarBet is currently live on Stellar Testnet. The path to mainnet:
+
+**1. Security audit** — Full audit of all four Soroban contracts before real funds are involved.
+
+**2. Oracle decentralisation** — Expand the reporter set with economic incentives and on-chain dispute resolution.
+
+**3. Provably fair hardening** — Persistent seed store with audit trail for the casino game backend.
+
+**4. Regulatory review** — Legal sign-off for each target jurisdiction before enabling real-money play.
+
+Testnet is fully functional for community exploration, developer onboarding, and Stellar Wave program participation. Private keys never leave the browser — all signing happens inside Freighter.
+
+---
+
 ## Security
 
 This is **testnet software**. Do not use real funds until a full security audit is complete. See [SECURITY.md](./SECURITY.md) for responsible disclosure guidelines.

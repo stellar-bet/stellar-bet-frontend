@@ -2,7 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react';
 import HeroCarousel from '@/components/home/HeroCarousel';
+import IntroSplash from '@/components/home/IntroSplash';
 import LiveWatchSection from '@/components/live/LiveWatchSection';
 import AccumSlip from '@/components/schedule/AccumSlip';
 import { useAccumStore } from '@/store/accumStore';
@@ -13,10 +15,24 @@ import { FullMatch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const SPLASH_KEY = 'stellarbet_splash_seen';
 
 export default function HomePage() {
   const { selections, addSelection, removeSelection, hasSelection } = useAccumStore();
   const { format } = useOddsStore();
+
+  // Show splash once per session
+  const [showSplash, setShowSplash] = useState(false);
+
+  useEffect(() => {
+    const seen = sessionStorage.getItem(SPLASH_KEY);
+    if (!seen) setShowSplash(true);
+  }, []);
+
+  const handleSplashDone = useCallback(() => {
+    sessionStorage.setItem(SPLASH_KEY, '1');
+    setShowSplash(false);
+  }, []);
 
   const { data: featured } = useQuery({
     queryKey: ['featured'],
@@ -45,6 +61,8 @@ export default function HomePage() {
   }
 
   return (
+    <>
+      {showSplash && <IntroSplash onDone={handleSplashDone} />}
     <div className="flex">
       {/* ── Main content ─────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 overflow-y-auto">
@@ -222,5 +240,6 @@ export default function HomePage() {
         </div>
       )}
     </div>
+    </>
   );
 }

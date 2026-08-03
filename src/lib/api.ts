@@ -205,3 +205,50 @@ export const scheduleApi = {
   match: (id: string) => apiFetch<FullMatch>(`/api/schedule/match/${id}`),
   byCompetition: (comp: string) => apiFetch<FullMatch[]>(`/api/schedule/${comp}`),
 };
+
+// ─── Provably Fair Games ──────────────────────────────────────────────────────
+
+export type GameType = 'dice' | 'mines' | 'plinko' | 'hilo' | 'wheel' | 'keno' | 'limbo' | 'aviator';
+
+export interface CommitResponse {
+  gameId: string;
+  serverSeedHash: string;
+}
+
+export interface RevealResponse {
+  gameId: string;
+  serverSeed: string;
+  serverSeedHash: string;
+  clientSeed: string;
+  nonce: number;
+  resultBytes: string;
+}
+
+export interface VerifyResponse {
+  valid: boolean;
+  serverSeedHash: string;
+  resultBytes: string;
+}
+
+export const gamesApi = {
+  /** Step 1 — get server seed hash commitment before play */
+  commit: (gameType: GameType) =>
+    apiFetch<CommitResponse>('/api/games/commit', {
+      method: 'POST',
+      body: JSON.stringify({ gameType }),
+    }),
+
+  /** Step 2 — reveal server seed + derive result bytes after bet is locked */
+  reveal: (gameId: string, clientSeed: string, nonce = 1) =>
+    apiFetch<RevealResponse>('/api/games/reveal', {
+      method: 'POST',
+      body: JSON.stringify({ gameId, clientSeed, nonce }),
+    }),
+
+  /** Step 3 — independently verify any past round */
+  verify: (serverSeed: string, clientSeed: string, nonce: number, resultBytes: string) =>
+    apiFetch<VerifyResponse>('/api/games/verify', {
+      method: 'POST',
+      body: JSON.stringify({ serverSeed, clientSeed, nonce, resultBytes }),
+    }),
+};

@@ -276,7 +276,16 @@ All Freighter interactions are isolated in `src/lib/freighter.ts`. Components ne
 
 ## Casino Games
 
-All 8 games use client-side RNG with a **5% house edge** applied via `applyEdge()` in `src/lib/gameUtils.ts`. In production these would be provably fair server-side results.
+All 8 games use a **provably fair commit-reveal scheme** backed by the backend, with a **5% house edge** applied via `applyEdge()` in `src/lib/gameUtils.ts`.
+
+### Provably fair flow
+
+1. Before each round the frontend calls `POST /api/games/commit` — the server generates a random 256-bit `serverSeed` and returns `sha256(serverSeed)` as a commitment. The server cannot change the seed after this point.
+2. The frontend sends the player's `clientSeed` (editable in the controls panel) via `POST /api/games/reveal`. The server returns the `serverSeed` and `resultBytes = HMAC-SHA256(serverSeed, clientSeed:nonce)`.
+3. Game outcomes are derived deterministically from `resultBytes` using `resultBytesToFloats()` in `src/lib/gameUtils.ts`.
+4. Players can independently verify any past round via `POST /api/games/verify` or by computing `HMAC-SHA256(serverSeed, clientSeed:nonce)` themselves and confirming it matches the published `resultBytes`.
+
+Each game page shows a collapsible **🔐 Provably Fair** panel after every round with the full `serverSeed`, `serverSeedHash`, `clientSeed`, `nonce`, and `resultBytes`. The `useProvablyFair` hook in `src/hooks/useProvablyFair.ts` manages the full commit-reveal lifecycle.
 
 | Game | Route | Mechanic | Max Win |
 |---|---|---|---|

@@ -4,9 +4,10 @@ import { useState } from 'react';
 import GameLayout, { StakeControl, ResultBanner } from '@/components/games/GameLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { buildDeck, hiloMultiplier, PlayingCard } from '@/lib/gameUtils';
+import { hiloMultiplier, hiloDecodeFromFloats, PlayingCard } from '@/lib/gameUtils';
 import { formatXlm } from '@/lib/utils';
 import { useWalletStore } from '@/store/walletStore';
+import { useProvablyFair } from '@/hooks/useProvablyFair';
 import toast from 'react-hot-toast';
 
 function CardFace({ card, hidden }: { card: PlayingCard | null; hidden?: boolean }) {
@@ -28,8 +29,10 @@ function CardFace({ card, hidden }: { card: PlayingCard | null; hidden?: boolean
 
 export default function HiLoPage() {
   const { isConnected, connect } = useWalletStore();
+  const pf = useProvablyFair('hilo');
+
   const [stakeXlm, setStakeXlm] = useState(10);
-  const [deck, setDeck] = useState<PlayingCard[]>(() => buildDeck());
+  const [deck, setDeck] = useState<PlayingCard[]>([]);
   const [currentCard, setCurrentCard] = useState<PlayingCard | null>(null);
   const [nextCard, setNextCard] = useState<PlayingCard | null>(null);
   const [phase, setPhase] = useState<'idle' | 'playing' | 'over'>('idle');
@@ -38,17 +41,24 @@ export default function HiLoPage() {
   const [streak, setStreak] = useState(0);
   const [guess, setGuess] = useState<'higher' | 'lower' | 'equal' | null>(null);
 
-  function startGame() {
+  async function startGame() {
     if (!isConnected) { connect(); return; }
-    const newDeck = buildDeck();
-    setDeck(newDeck.slice(2));
-    setCurrentCard(newDeck[0]);
-    setNextCard(null);
-    setPhase('playing');
-    setWon(null);
-    setTotalMult(1);
-    setStreak(0);
-    setGuess(null);
+    try {
+      await pf.commit();
+      // 52 floats to deterministically shuffle the deck
+      const floats = await pf.reveal(52);
+      const shuffled = hiloDecodeFromFloats(floats);
+      setDeck(shuffled.slice(2));
+      setCurrentCard(shuffled[0]);
+      setNextCard(null);
+      setPhase('playing');
+      setWon(null);
+      setTotalMult(1);
+      setStreak(0);
+      setGuess(null);
+    } catch {
+      toast.error('Could not reach server — try again');
+    }
   }
 
   function makeGuess(g: 'higher' | 'lower' | 'equal') {
@@ -115,7 +125,6 @@ export default function HiLoPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 text-center mb-6">
         {[
           { label: 'Multiplier', value: `${totalMult.toFixed(2)}x`, color: 'text-accent' },
@@ -129,17 +138,13 @@ export default function HiLoPage() {
         ))}
       </div>
 
-      {/* Guess buttons */}
       {phase === 'playing' && !guess && (
         <div className="grid grid-cols-3 gap-2">
           {multOptions.map(o => (
-            <button
-              key={o.value}
-              onClick={() => makeGuess(o.value)}
+            <button key={o.value} onClick={() => makeGuess(o.value)}
               className="flex flex-col items-center py-3 rounded-xl bg-white/5 border border-white/10
                          hover:bg-accent/20 hover:border-accent transition-all"
-              aria-label={`Guess ${o.value}`}
-            >
+              aria-label={`Guess ${o.value}`}>
               <span className="text-lg">{o.label.split(' ')[0]}</span>
               <span className="text-white text-xs font-semibold mt-1">{o.label.split(' ')[1]}</span>
               <span className="text-accent text-xs mt-0.5">{o.mult.toFixed(2)}x</span>
@@ -155,6 +160,19 @@ export default function HiLoPage() {
       )}
 
       <ResultBanner won={won} stakeXlm={stakeXlm} multiplier={totalMult} />
+
+      {pf.lastReveal && (
+        <details className="mt-4 text-xs text-gray-500 bg-white/5 rounded-xl p-3">
+          <summary className="cursor-pointer text-accent font-medium">🔐 Provably Fair — verify last round</summary>
+          <div className="mt-2 space-y-1 break-all">
+            <p><span className="text-gray-400">Server seed:</span> {pf.lastReveal.serverSeed}</p>
+            <p><span className="text-gray-400">Hash:</span> {pf.lastReveal.serverSeedHash}</p>
+            <p><span className="text-gray-400">Client seed:</span> {pf.lastReveal.clientSeed}</p>
+            <p><span className="text-gray-400">Nonce:</span> {pf.lastReveal.nonce}</p>
+            <p><span className="text-gray-400">Result bytes:</span> {pf.lastReveal.resultBytes}</p>
+          </div>
+        </details>
+      )}
     </Card>
   );
 
@@ -162,18 +180,29 @@ export default function HiLoPage() {
     <Card className="p-4 space-y-4">
       <h2 className="text-white font-semibold">HiLo</h2>
       <StakeControl stakeXlm={stakeXlm} setStake={setStakeXlm} disabled={phase === 'playing'} />
+
+      <div>
+        <label className="text-xs text-gray-400 block mb-1">Your client seed</label>
+        <input type="text" value={pf.clientSeed} onChange={(e) => pf.setClientSeed(e.target.value)}
+          maxLength={128} disabled={phase === 'playing'}
+          className="w-full bg-brand-600 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white
+                     focus:outline-none focus:ring-1 focus:ring-accent/50 font-mono disabled:opacity-50"
+          aria-label="Client seed" />
+      </div>
+
       {(phase === 'idle' || phase === 'over') && (
         <Button variant="primary" size="lg" className="w-full" onClick={startGame}>
           {phase === 'over' ? '🔄 Play Again' : isConnected ? '🃏 Start Game' : 'Connect Wallet'}
         </Button>
       )}
+
       <div className="bg-white/5 rounded-xl p-3 text-xs text-gray-400 space-y-1">
         <p className="font-semibold text-white mb-1">How to play</p>
         <p>Guess if the next card is Higher, Lower, or Equal.</p>
         <p>Each correct guess multiplies your winnings.</p>
         <p>Cash out any time to lock in your profit.</p>
       </div>
-      <p className="text-center text-xs text-gray-600">5% house edge · Testnet only</p>
+      <p className="text-center text-xs text-gray-600">5% house edge · Provably fair · Testnet</p>
     </Card>
   );
 

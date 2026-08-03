@@ -4,13 +4,16 @@ import { useState } from 'react';
 import GameLayout, { StakeControl, ResultBanner } from '@/components/games/GameLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { applyEdge } from '@/lib/gameUtils';
+import { applyEdge, diceResultFromFloat } from '@/lib/gameUtils';
 import { formatXlm } from '@/lib/utils';
 import { useWalletStore } from '@/store/walletStore';
+import { useProvablyFair } from '@/hooks/useProvablyFair';
 import toast from 'react-hot-toast';
 
 export default function DicePage() {
   const { isConnected, connect } = useWalletStore();
+  const pf = useProvablyFair('dice');
+
   const [stakeXlm, setStakeXlm] = useState(10);
   const [target, setTarget] = useState(50);
   const [mode, setMode] = useState<'over' | 'under'>('over');
@@ -27,19 +30,30 @@ export default function DicePage() {
     setResult(null);
     setWon(null);
 
-    // Animate roll
-    await new Promise(r => setTimeout(r, 600));
-    const rolled = Math.floor(Math.random() * 100) + 1;
-    const didWin = mode === 'over' ? rolled > target : rolled < target;
+    try {
+      // Step 1 — commit (get server seed hash)
+      await pf.commit();
 
-    setResult(rolled);
-    setWon(didWin);
-    setRolling(false);
+      // Brief animation while "locking in" the bet
+      await new Promise(r => setTimeout(r, 500));
 
-    if (didWin) {
-      toast.success(`Rolled ${rolled} — Won ${formatXlm(stakeXlm * multiplier)}!`, { icon: '🎲' });
-    } else {
-      toast.error(`Rolled ${rolled} — Better luck next time`);
+      // Step 2 — reveal (server seed unlocked, result derived)
+      const floats = await pf.reveal(1);
+      const rolled = diceResultFromFloat(floats[0]);
+      const didWin = mode === 'over' ? rolled > target : rolled < target;
+
+      setResult(rolled);
+      setWon(didWin);
+
+      if (didWin) {
+        toast.success(`Rolled ${rolled} — Won ${formatXlm(stakeXlm * multiplier)}!`, { icon: '🎲' });
+      } else {
+        toast.error(`Rolled ${rolled} — Better luck next time`);
+      }
+    } catch {
+      toast.error('Could not reach server — try again');
+    } finally {
+      setRolling(false);
     }
   }
 
@@ -68,7 +82,6 @@ export default function DicePage() {
         </div>
 
         <div className="relative">
-          {/* Color track */}
           <div className="h-3 rounded-full overflow-hidden flex mb-1">
             <div className="bg-win/40" style={{ width: `${mode === 'under' ? target : 100 - target}%` }} />
             <div className="bg-red-500/30 flex-1" />
@@ -84,7 +97,6 @@ export default function DicePage() {
           </div>
         </div>
 
-        {/* Over / Under toggle */}
         <div className="flex gap-2 mt-3" role="group" aria-label="Roll mode">
           {(['under','over'] as const).map((m) => (
             <button
@@ -115,6 +127,25 @@ export default function DicePage() {
       </div>
 
       <ResultBanner won={won} stakeXlm={stakeXlm} multiplier={multiplier} />
+
+      {/* Provably fair verification info */}
+      {pf.lastReveal && (
+        <details className="mt-4 text-xs text-gray-500 bg-white/5 rounded-xl p-3">
+          <summary className="cursor-pointer text-accent font-medium">
+            🔐 Provably Fair — verify last round
+          </summary>
+          <div className="mt-2 space-y-1 break-all">
+            <p><span className="text-gray-400">Server seed:</span> {pf.lastReveal.serverSeed}</p>
+            <p><span className="text-gray-400">Server seed hash:</span> {pf.lastReveal.serverSeedHash}</p>
+            <p><span className="text-gray-400">Client seed:</span> {pf.lastReveal.clientSeed}</p>
+            <p><span className="text-gray-400">Nonce:</span> {pf.lastReveal.nonce}</p>
+            <p><span className="text-gray-400">Result bytes:</span> {pf.lastReveal.resultBytes}</p>
+            <p className="text-gray-500 pt-1">
+              Verify: <code className="text-gray-300">HMAC-SHA256(serverSeed, clientSeed:nonce)</code> = resultBytes
+            </p>
+          </div>
+        </details>
+      )}
     </Card>
   );
 
@@ -122,10 +153,33 @@ export default function DicePage() {
     <Card className="p-4 space-y-4">
       <h2 className="text-white font-semibold">Dice</h2>
       <StakeControl stakeXlm={stakeXlm} setStake={setStakeXlm} />
+
+      {/* Client seed editor */}
+      <div>
+        <label className="text-xs text-gray-400 block mb-1">Your client seed</label>
+        <input
+          type="text"
+          value={pf.clientSeed}
+          onChange={(e) => pf.setClientSeed(e.target.value)}
+          maxLength={128}
+          className="w-full bg-brand-600 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white
+                     focus:outline-none focus:ring-1 focus:ring-accent/50 font-mono"
+          aria-label="Client seed"
+        />
+        <p className="text-xs text-gray-600 mt-1">Change this to influence your result — server cannot predict it.</p>
+      </div>
+
+      {pf.serverSeedHash && (
+        <div className="bg-white/5 rounded-xl p-2 text-xs break-all">
+          <p className="text-gray-400 font-medium mb-0.5">Server seed commitment</p>
+          <p className="text-accent font-mono">{pf.serverSeedHash}</p>
+        </div>
+      )}
+
       <Button variant="primary" size="lg" className="w-full" loading={rolling} onClick={roll}>
         {isConnected ? '🎲 Roll Dice' : 'Connect Wallet'}
       </Button>
-      <p className="text-center text-xs text-gray-600">5% house edge · Testnet only</p>
+      <p className="text-center text-xs text-gray-600">5% house edge · Provably fair · Testnet</p>
     </Card>
   );
 

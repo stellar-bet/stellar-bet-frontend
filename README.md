@@ -25,7 +25,6 @@ Next.js 14 dApp for the StellarBet prediction market platform on Stellar/Soroban
 - [Casino Games](#casino-games)
 - [Project Structure](#project-structure)
 - [Testing](#testing)
-- [Contributing](#contributing)
 - [Security](#security)
 - [License](#license)
 
@@ -353,10 +352,6 @@ npm test
 Tests use [Jest](https://jestjs.io) + [React Testing Library](https://testing-library.com) with `jest-environment-jsdom`. The app passes `--passWithNoTests` so CI does not fail before test coverage is added.
 
 ---
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Open issues tagged `stellar-wave` carry point rewards through the [Stellar Wave Program](https://drips.network/wave).
 
 ---
 

@@ -2,7 +2,6 @@
 
 Next.js 14 dApp for the StellarBet prediction market platform on Stellar/Soroban.
 
-[![Stellar Wave Program](https://img.shields.io/badge/Stellar%20Wave-Active-blue?logo=stellar)](https://drips.network/wave)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.5-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?logo=tailwindcss)](https://tailwindcss.com)
